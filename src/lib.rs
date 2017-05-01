@@ -29,8 +29,50 @@ impl Node {
     pub fn to_ptr(self) -> Rc<Node> {
         Rc::new(self)
     }
+
 }
 
+
+
+
+fn calc_middle(n: usize) -> usize {
+    let middle = if n % 2 == 0 {
+        n as f32 / 2 as f32
+    } else {
+        (n as f32 / 2 as f32).trunc() + 1 as f32
+    };
+
+    middle as usize
+}
+
+
+impl From<Vec<u32>> for Node {
+    fn from(v: Vec<u32>) -> Node {
+        let len = v.len();
+        if len == 1 {
+            return Node::new(v[0])
+        }
+
+        if len == 2 {
+            return Node::new(v[1])
+                .left(Node::new(v[0]).to_ptr())
+        }
+
+        let middle = calc_middle(len);
+
+        //println!("left {:?}, middle {}, right {:?}",v[..(middle-1)].to_vec(), v[middle - 1], v[middle..].to_vec());
+        //TODO avoid copying data?
+        let left = Node::from(v[..(middle-1)].to_vec());
+        let right = Node::from(v[middle..].to_vec());
+
+        Node::new(v[middle - 1])
+            .left(left.to_ptr())
+            .right(right.to_ptr())
+    }
+
+}
+
+//TODO make it accept references instead of Rc
 enum NodeOrValue {
     Node(Rc<Node>),
     Value(u32),
@@ -62,6 +104,39 @@ pub fn print_in_order(node: Rc<Node>) {
 
 }
 
+pub fn print_tree(node: &Node) {
+    print_tree_r(node, 0);
+}
+
+//TODO try a horizontal print
+fn print_tree_r(node: &Node, level: usize) {
+    if level == 0 {
+        println!("{}", node.data);
+        if let Some(ref right) = node.right {
+            print_tree_r(right, level + 1);
+        }
+
+        if let Some(ref left) = node.left {
+            print_tree_r(left, level + 1);
+        }
+        return;
+    }
+
+    let prev_level = level - 1;
+    let prev_indent = prev_level * 4;
+    let indent = 4;
+    //println!("level {}, indent {}, prev_level: {}, prev_indent: {}", level, indent, prev_level, prev_indent);
+    println!("{:>prev_indent$}|{:->indent$}", "", node.data, prev_indent=prev_indent, indent=indent);
+
+    if let Some(ref right) = node.right {
+        print_tree_r(right, level + 1);
+    }
+
+    if let Some(ref left) = node.left {
+        print_tree_r(left, level + 1);
+    }
+}
+
 #[test]
 fn it_works() {
     let tree = Node::new(5)
@@ -83,4 +158,21 @@ fn it_works() {
     println!("Ordered lineal print");
     print_in_order(tree);
 
+
+    let cases = vec![
+        vec![2],
+        vec![2,3],
+        vec![2,3,4],
+        vec![2,3,4,5],
+        vec![2,3,4,5,6,7,8,9,10,11,12],
+        (1..100).collect(),
+    ];
+
+    for (i, v) in cases.iter().enumerate() {
+        println!("TREE {}, {:?}", i, v);
+        let tree = Node::from(v.clone());
+        print_tree(&tree);
+        println!("Ordered lineal print");
+        //print_in_order(tree);
+    }
 }
