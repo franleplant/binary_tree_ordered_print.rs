@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::borrow::Borrow;
 
 #[derive(Debug)]
 pub struct Node {
@@ -72,27 +73,25 @@ impl From<Vec<u32>> for Node {
 
 }
 
-//TODO make it accept references instead of Rc
-enum NodeOrValue {
-    Node(Rc<Node>),
+enum NodeOrValue<'a> {
+    Node(&'a Node),
     Value(u32),
 }
 
-pub fn print_in_order(node: Rc<Node>) {
-    let mut stack: Vec<NodeOrValue> = vec![NodeOrValue::Node(node)];
+pub fn print_in_order(node: &Node) {
+    let mut stack: Vec<NodeOrValue> = vec![NodeOrValue::Node(&node)];
 
     while let Some(top) = stack.pop() {
-        //println!("Iteration");
         match top {
             NodeOrValue::Node(node) => {
                 if let &Some(ref right) = &node.right {
-                    stack.push(NodeOrValue::Node(right.clone()));
+                    stack.push(NodeOrValue::Node(right));
                 }
 
                 stack.push(NodeOrValue::Value(node.data));
 
                 if let &Some(ref left) = &node.left {
-                    stack.push(NodeOrValue::Node(left.clone()));
+                    stack.push(NodeOrValue::Node(left));
                 }
 
             },
@@ -137,6 +136,28 @@ fn print_tree_r(node: &Node, level: usize) {
     }
 }
 
+//TODO this does not work
+//pub fn print_tree_h(node: &Node, width: usize) {
+    //print_tree_h_r(vec![Some(*node)], width, 0);
+//}
+
+//fn print_tree_h_r(nodes: Vec<Option<Node>>, width: usize, level: usize) {
+    //let mut next_level_children = vec![];
+    //let mut current_level = String::new();
+    //if nodes.len() == 0 {
+        //return
+    //}
+    //for node in nodes {
+        //next_level_children.push(node.left);
+        //next_level_children.push(node.right);
+
+        //current_level.push_str(&format!("{}", node.data));
+    //}
+
+    //println!("{:?}", current_level);
+    //print_tree_h_r(next_level_children, width, level + 1);
+//}
+
 #[test]
 fn it_works() {
     let tree = Node::new(5)
@@ -156,7 +177,7 @@ fn it_works() {
 
     println!("{:?}", tree);
     println!("Ordered lineal print");
-    print_in_order(tree);
+    print_in_order(&tree);
 
 
     let cases = vec![
@@ -172,7 +193,7 @@ fn it_works() {
         println!("TREE {}, {:?}", i, v);
         let tree = Node::from(v.clone());
         print_tree(&tree);
-        println!("Ordered lineal print");
-        //print_in_order(tree);
+        //print_tree_h(&tree, 150);
+        //print_in_order(&tree);
     }
 }
